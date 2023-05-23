@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+    <head>
+<style>
+
+body{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#content{
+    background-color: brown;
+    height:700px;
+    width: 600px;
+}
+#player-info{
+    width: 100%;
+    padding: 20px 0px;
+    color: white;
+    background-color: black;
+}
+
+#game-board{
+    width: 100%;
+    aspect-ratio: 1;
+    display:grid;
+    grid-template-columns: auto auto auto;
+}
+.peaces{
+    background-color: burlywood;
+    border: 1px solid grey;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    box-sizing: border-box;
+}
+
+#setting{
+    display: flex;
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.setting-btn{
+    margin: 40px;
+    padding: 10px;
+    border-radius: 10px;
+    border:1px solid black;
+    background: white;
+}
+
+</style>
+    </head>
+    <body>
+        <template id="game">
+            <div id="player-info">
+                
+            </div>
+            <div id="game-board">
+                <div class="peaces" piece-num="1"></div>
+                <div class="peaces" piece-num="2"></div>
+                <div class="peaces" piece-num="3"></div>
+                <div class="peaces" piece-num="4"></div>
+                <div class="peaces" piece-num="5"></div>
+                <div class="peaces" piece-num="6"></div>
+                <div class="peaces" piece-num="9"></div>
+                <div class="peaces" piece-num="8"></div>
+                <div class="peaces" piece-num="9"></div>
+            </div>
+        </template>
+
+        <template id="form-for-online">
+            {{user }} vs. <p id="player-2"></p>
+        </template>
+        
+        <h2>{{user}}</h2>
+        <div id="content">
+            <div id="setting">
+                <button id="play-online" class="setting-btn">play Online</button>
+                <button id="play-offline" class="setting-btn">play-offline</button>                
+            </div>
+        </div>
+
+        <script>
+            let boardPieces = document.getElementsByClassName("peaces");
+            let play_online = document.getElementById("play-online")
+            let play_offline = document.getElementById("play-offline")
+            let content = document.getElementById("content")
+            let tem_game = document.getElementById("game")
+            let tem_form_for_online = document.getElementById("form-for-online")
+            
+
+            play_offline.onclick = () => {
+                content.innerHTML =  tem_game.innerHTML
+                Game.isStart = true
+            }
+            play_online.onclick = () => {
+                content.innerHTML = tem_form_for_online.innerHTML
+                sleep(10000)
+                console.log("hello")
+                player_matching()
+                
+            }
+
+            function sleep(ms){
+                return new Promise(resolve=> setTimeout(resolve, ms))
+            }
+
+            function player_matching(){
+                
+                let player_2 = document.getElementById("player-2")
+                var isPlayer = new EventSource("/isAnyPlayer")
+                console.log(isPlayer.readyState)
+                isPlayer.onopen = () => {
+                    player_2.innerHTML += "."
+                }
+                isPlayer.onmessage = function(e) {
+                        // XSS in chat is fun (let's prevent that)
+                        console.log(e.data)
+                        player_2.innerText = e.data
+                        isPlayer.close()
+                        matched = true
+                        console.log(matched)
+                        console.log(isPlayer.readyState)
+                };
+                let matched = false
+                let i =0
+                
+                
+                /*while(!matched){
+                    console.log("matching player" + i)
+                    player_2.innerText += "."
+                    
+                }*/
+                
+            }
+            class Game{
+                static isStart = false
+                static victMoves = [
+                    [1,2,3],[4,5,6],[7,8,9],[1,4,7],[2,5,8],[3,6,9],[1,5,9],[3,5,7]
+                ];
+                static win = false
+                static currentPlayer
+                constructor(){
+                    const player1 = new Player("Jenish", "X")
+                    const player2 = new Player("Nishit", "O")
+                    this.currentPlayer = player1
+                }
+            }
+
+            class Player{
+                
+                constructor(name, mark){
+                    this.mark = mark;
+                    this.name = name;
+                    this.moves = []
+                    
+                }
+            }
+
+            const player1 = new Player("Jenish", "X")
+            const player2 = new Player("Nishit", "O")
+            let currentPlayer = player1
+
+            
+
+            function changePlayer(){
+                if(currentPlayer == player1){
+                    currentPlayer = player2
+                }else{
+                    currentPlayer = player1
+                }
+            }
+
+            function isAnyOneWin(){
+                for(let victMove in Game.victMoves){
+                    [1,2,3]
+                    for(let move in victMove){
+                        if(!(move in currentPlayer.moves)){                          
+                            Game.win = false
+                            break
+                        }                  
+                    }
+                    if(Game.win){
+                            console.log(currentPlayer.name + "    is win the match")
+                            break;
+                        }
+                }
+            }
+
+            async function sendMove(move){
+                const request = await fetch("/moved?move=" + move)
+                const response = request.json()
+
+                console.log(response)
+            }
+
+            //var source = new EventSource("/isMoved")
+            //source.onmessage = function(e) {
+            //        // XSS in chat is fun (let's prevent that)
+            //        console.log(e.data)
+            //       
+            //};
+            
+
+            function gameStart(){
+                for(let i=0; i<boardPieces.length; i++){
+                    boardPieces[i].onclick = () => {
+                      console.log(Player.victMoves)
+                      if(boardPieces[i].innerHTML == ""){
+                            boardPieces[i].innerHTML = currentPlayer.mark;
+                            currentPlayer.moves.push(parseInt(boardPieces[i].getAttribute("piece-num")))
+                            console.log(currentPlayer.moves)
+                            console.log(parseInt(boardPieces[i].getAttribute("piece-num")))
+                            sendMove(boardPieces[i].getAttribute("piece-num"))
+                            isAnyOneWin()
+                            changePlayer()
+                        }
+                    }
+                }
+
+            }
+            
+            
+            /*while(true){
+                if(Game.isStart){
+                    gameStart();
+                }else{
+                    console.log("hello")
+                }
+            }*/
+        </script>
+    </body>
+</html>
