@@ -152,10 +152,12 @@ body{
                 static isFinish = true;
                 static player1   = null;
                 static player2   = null;
+                static itSelf = null;
                 static boardPieces  = document.getElementsByClassName("peaces");
                 static winMoves = [["1","2","3",], ["4","5","6",],["7","8","9"],["1","4","7"],["2","5","8"],["3","6","9"],["1","5","9"],["3","5","7"]]
                 static currentPlayer = null
                 static start(){
+                    
                     this.isFinish = false;
                     let current_player_details = document.getElementById("current-player-details")
                     this.currentPlayer = this.player1;
@@ -216,6 +218,62 @@ body{
             class OnlineGame extends Game{
                 static gameId = null;
                 static playerNo = null;
+                static opponentNo = null;
+
+                static start(){
+                    this.opponentNo = (this.playerNo === "1") ? "2" : "1";
+                    this.itself = (this.playerNo === "1") ? this.player1 : this.player2
+                    this.isFinish = false;
+                    let current_player_details = document.getElementById("current-player-details")
+                    this.currentPlayer = this.player1;
+
+                    const listenMove = new EventSource("/isMoved/" + this.gameId + "/" + this.opponentNo);
+                    listenMove.addEventListener("moved", (ev) => {
+                        let move = ev.data
+                        this.boardPieces[parseInt(move) - 1].click()
+                    })
+                    for(let i=0; i<this.boardPieces.length; i++){
+                        this.boardPieces[i].onclick = async () =>{
+                            console.log("clicked")
+                            if(this.boardPieces[i].innerHTML === "" && !this.isFinish && this.currentPlayer === this.itself){
+                                const move = this.boardPieces[i].getAttribute("piece-num")
+                                const tellMove = await fetch("/move/" + this.gameId + "/" + this.playerNo + "/" + move)
+                                this.boardPieces[i].innerHTML = this.currentPlayer.mark;
+                                this.currentPlayer.moves.push( move )
+                                this.isWin()
+                                if(this.currentPlayer === this.player1){
+                                    this.currentPlayer = this.player2;
+                                }else{
+                                    this.currentPlayer = this.player1;
+                                }
+                                current_player_details.innerHTML = "Turn : " + this.currentPlayer.name
+                            }
+
+                        }
+                    }
+                    
+                }
+
+                static isWin(){
+                    for(let i in this.winMoves){
+                        let win = true;
+                        for(let j in this.winMoves[i]){
+                            
+                            if(!(this.currentPlayer.moves.includes(this.winMoves[i][j]))){
+                                win = false;
+                                break;
+                            }
+                            console.log(this.currentPlayer.moves.includes(this.winMoves[i][j]) + "     " + this.winMoves[i][j])
+                        }
+                        if(win){
+                            alert(this.currentPlayer.name);
+                            console.log("win")
+                            this.isFinish = true
+                            break;
+                        }
+                    }
+                    //this.isRunning = false
+                }
             }
 
             class Player{
@@ -299,6 +357,7 @@ body{
                         console.log("ready steady go")
                         loadContent(tem_game)
                         isAnyPlayer.close()
+                        OnlineGame.start()
                     })
 
                     console.log(OnlineGame.player1);

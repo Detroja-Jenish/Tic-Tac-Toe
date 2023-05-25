@@ -77,18 +77,17 @@ def getGameIds():
     global gameIds
     return gameIds
 
-@app.route("/moved")
-def moved():
-    global change,move
-    move = request.args.get("move")
-    change = True
-    return jsonify({"done":"true"})
+@app.route("/move/<gameId>/<playerNo>/<move>")
+def moved(gameId, playerNo, move):
+   global gameIds
+   gameIds[gameId]["player" + playerNo]["moved"] = True
+   gameIds[gameId]["player" + playerNo]["move"] = move
+   return Response(status=202)
 
-@app.route("/isMoved")
-def isMoved():
-    message = event_stream()
-    print(message)
-    res =Response(message, mimetype="text/event-stream")
+@app.route("/isMoved/<gameId>/<opponentNo>")
+def isMoved(gameId, opponentNo):
+    move = IsMoved(gameId, opponentNo)
+    res = Response(move, mimetype="text/event-stream")
     return res
 
 @app.route("/isAnyPlayer/<gameId>")
@@ -105,7 +104,11 @@ def iAmReady(gameId,playerNo):
     print(gameIds[gameId][f"player{playerNo}"])
     return Response(status=202)
 
-
+def IsMoved(gameId, opponentNo):
+    global gameIds
+    if gameIds[gameId]["player" + opponentNo]["moved"]:
+        gameIds[gameId]["player" + opponentNo]["moved"] = False
+        yield "event: moved\ndata: %s\n\n" % gameIds[gameId]["player" + opponentNo]["move"]
 
 def get_player(gameId):
     global gameIds
