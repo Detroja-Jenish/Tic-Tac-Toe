@@ -92,14 +92,22 @@ body{
         </template>
 
         <template id="form-for-online">
+            <select id="select-mark" name="select-mark">
+                <option value="" selected="true" disabled>select your mark</option>
+                <option value="X">X</option>
+                <option value="O">O</option>
+                <option value="T">T</option>
+            </select>
             {{user }} vs. <p id="player-2"></p>
+            <button id="find-player">Find Player</button>
+            <button id="start-btn">Start</button>
         </template>
 
         <template id="form-for-ofline">
             <div id="offline-form">
                 <div id="details" class="details">
                     Player1 
-                    <input type="text" name="player1-name" value={{user}} id="player1-name"/>
+                    <input type="text" name="player1-name"  id="player1-name"/>
                     <select id="player1-mark">
                         <option value="" selected="true" disabled>select your mark</option>
                         <option value="X">X</option>
@@ -137,6 +145,8 @@ body{
             let tem_game             = document.getElementById("game")
             let tem_form_for_online  = document.getElementById("form-for-online")
             let tem_form_for_ffline  = document.getElementById("form-for-ofline")
+
+           
 
             class Game{
                 static isFinish = true;
@@ -203,6 +213,11 @@ body{
 
             }
 
+            class OnlineGame extends Game{
+                static gameId = null;
+                static playerNo = null;
+            }
+
             class Player{
                 constructor(name, mark){
                     this.name = name;
@@ -227,9 +242,78 @@ body{
                 }
             }
 
+            play_online_btn.onclick = () => {
+                loadContent(tem_form_for_online)
+
+                let select_mark = document.getElementById("select-mark");
+                let find_player = document.getElementById("find-player")
+                let isAnyPlayer = null;
+                let start_btn   = document.getElementById("start-btn");
+
+                itSelf = new Player("{{user}}", "")
+                
+                select_mark.onchange = () => {
+                    console.log(select_mark.value)
+                }
+
+                start_btn.onclick = async () =>{
+                    const ready = await fetch("/iAmReady/" + OnlineGame.gameId + "/" + OnlineGame.playerNo)
+                    console.log(ready)
+                }
+                find_player.onclick = async () => {
+                    itSelf.mark = select_mark.value
+                    const data = await fetch("/letsPlay?user={{user}}&mark=" + select_mark.value);
+                    const response = await data.json();
+
+                    OnlineGame.gameId = response["gameId"]
+                    OnlineGame.playerNo = response["playerNo"]
+
+                    if( OnlineGame.playerNo === "1"){
+                        OnlineGame.player1 = itSelf;
+                    }else{
+                        OnlineGame.player2 = itSelf;
+                    }
+
+                    isAnyPlayer = new EventSource("/isAnyPlayer/" + OnlineGame.gameId);
+                    isAnyPlayer.onopen = () => {
+                        document.getElementById("player-2").innerHTML += "."
+                    }
+                    isAnyPlayer.addEventListener("getPlayer", (ev) => {
+                        console.log("player matched")
+                        console.log(ev.data)
+                        //document.getElementById("player-2").innerHTML == 
+                        const players = JSON.parse(ev.data.replace(/'/g,'"').replace(/False/g,'false').replace(/True/g,'true'))
+                        console.log(players)
+
+                        if(OnlineGame.playerNo == 1){
+                            OnlineGame.player2 = new Player(players["player2"][ "name" ], players["player2"]["mark"])
+                        }else{
+                            OnlineGame.player1 = new Player(players["player1"][ "name" ], players["player1"]["mark"])
+                        }
+                        console.log(OnlineGame.player1)
+                        console.log(OnlineGame.player2)
+                        //isAnyPlayer.close()
+                    });
+
+                    isAnyPlayer.addEventListener("readySteadyGo", () => {
+                        console.log("ready steady go")
+                        loadContent(tem_game)
+                        isAnyPlayer.close()
+                    })
+
+                    console.log(OnlineGame.player1);
+                    console.log(OnlineGame.player2)
+                    content.removeChild(select_mark)
+                    select_mark.removeEventListener("click", () => {
+                        console.log(select_mark.value)
+                    }, true)
+                }
+                
+            }
+
             play_offline_btn.onclick = () => {
-                Game.player1 = new Player("{{user}}" ,"X");
-                Game.player2 = new Player("RD","O");
+                Game.player1 = new Player("{{user}}" ,"");
+                Game.player2 = new Player("","");
                 console.log(Game.player1.getName())
                 loadContent( tem_form_for_ffline )
 
@@ -263,7 +347,7 @@ body{
                 start_btn.onclick = () => {
                     console.log("start")
                     console.log(Game.player1.name)
-                    if(Game.player1.name != "" && Game.player2.name != ""){
+                    if(Game.player1.name != "" && Game.player2.name != "" && Game.player1.mark != "" && Game.player2.mark != ""){
                         player1_mark.removeEventListener("change", () =>{
                             console.log(player1_mark.value);
                             console.log(player1_mark)
