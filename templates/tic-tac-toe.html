@@ -195,6 +195,7 @@ body{
                 static isWin(){
                     for(let i in this.winMoves){
                         let win = true;
+                        let draw = true;
                         for(let j in this.winMoves[i]){
                             
                             if(!(this.currentPlayer.moves.includes(this.winMoves[i][j]))){
@@ -203,11 +204,22 @@ body{
                             }
                             console.log(this.currentPlayer.moves.includes(this.winMoves[i][j]) + "     " + this.winMoves[i][j])
                         }
+
+                        for(let i =0; i<this.boardPieces.length; i++){
+                            if(this.boardPieces === ""){
+                                draw = false
+                                alert(draw)
+                            }
+                        }
                         if(win){
                             alert(this.currentPlayer.name);
                             console.log("win")
                             this.isFinish = true
                             break;
+                        }else{
+                            if(draw){
+                                alert("match draw")
+                            }
                         }
                     }
                     //this.isRunning = false
@@ -219,10 +231,12 @@ body{
                 static gameId = null;
                 static playerNo = null;
                 static opponentNo = null;
+                static opponentTurn = false;
 
                 static start(){
                     this.opponentNo = (this.playerNo === "1") ? "2" : "1";
                     this.itself = (this.playerNo === "1") ? this.player1 : this.player2
+                    this.opponentTurn = (this.playerNo === "1") ? false : true 
                     this.isFinish = false;
                     let current_player_details = document.getElementById("current-player-details")
                     this.currentPlayer = this.player1;
@@ -230,7 +244,10 @@ body{
                     const listenMove = new EventSource("/isMoved/" + this.gameId + "/" + this.opponentNo);
                     listenMove.addEventListener("moved", (ev) => {
                         let move = ev.data
-                        this.boardPieces[parseInt(move) - 1].click()
+                        this.doMove( move )
+                        this.isWin()
+                        this.changePlayer()
+                        current_player_details.innerHTML = "Turn : " + this.currentPlayer.name
                     })
                     for(let i=0; i<this.boardPieces.length; i++){
                         this.boardPieces[i].onclick = async () =>{
@@ -238,25 +255,32 @@ body{
                             if(this.boardPieces[i].innerHTML === "" && !this.isFinish && this.currentPlayer === this.itself){
                                 const move = this.boardPieces[i].getAttribute("piece-num")
                                 const tellMove = await fetch("/move/" + this.gameId + "/" + this.playerNo + "/" + move)
-                                this.boardPieces[i].innerHTML = this.currentPlayer.mark;
-                                this.currentPlayer.moves.push( move )
+                                this.doMove(parseInt(move))
                                 this.isWin()
-                                if(this.currentPlayer === this.player1){
-                                    this.currentPlayer = this.player2;
-                                }else{
-                                    this.currentPlayer = this.player1;
-                                }
+                                this.changePlayer()
                                 current_player_details.innerHTML = "Turn : " + this.currentPlayer.name
                             }
-
                         }
                     }
                     
                 }
 
+                static changePlayer(){
+                    if(this.currentPlayer === this.player1){
+                        this.currentPlayer = this.player2;
+                    }else{
+                        this.currentPlayer = this.player1;
+                    }
+                }
+                static doMove(move){
+                    this.boardPieces[move-1].innerHTML = this.currentPlayer.mark;
+                    this.currentPlayer.moves.push( move )
+                }
+
                 static isWin(){
                     for(let i in this.winMoves){
                         let win = true;
+                        let draw = true;
                         for(let j in this.winMoves[i]){
                             
                             if(!(this.currentPlayer.moves.includes(this.winMoves[i][j]))){
@@ -265,11 +289,22 @@ body{
                             }
                             console.log(this.currentPlayer.moves.includes(this.winMoves[i][j]) + "     " + this.winMoves[i][j])
                         }
+
+                        for(let i =0; i<this.boardPieces.length; i++){
+                            if(this.boardPieces[i].innerHTML === ""){
+                                draw = false
+                                break;
+                            }
+                        }
                         if(win){
                             alert(this.currentPlayer.name);
                             console.log("win")
                             this.isFinish = true
                             break;
+                        }else{
+                            if(draw){
+                                alert("match draw")
+                            }
                         }
                     }
                     //this.isRunning = false
