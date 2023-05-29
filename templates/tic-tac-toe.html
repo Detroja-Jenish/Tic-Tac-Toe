@@ -74,10 +74,13 @@ body{
 </style>
     </head>
     <body>
+        <template id="reset-game">
+            <br><button id='rematch' onvlick=OnlineGame.reset() >rematch</button>
+        </template>
         <template id="game">
-            <div id="current-player-details">
+            <h3 id="current-player-details">
                 
-            </div>
+            </h3>
             <div id="game-board">
                 <div class="peaces" piece-num="1"></div>
                 <div class="peaces" piece-num="2"></div>
@@ -240,21 +243,19 @@ body{
                     this.isFinish = false;
                     let current_player_details = document.getElementById("current-player-details")
                     this.currentPlayer = this.player1;
-
-                    const listenMove = new EventSource("/isMoved/" + this.gameId + "/" + this.opponentNo);
-                    listenMove.addEventListener("moved", (ev) => {
-                        let move = ev.data
-                        this.doMove( move )
-                        this.isWin()
-                        this.changePlayer()
-                        current_player_details.innerHTML = "Turn : " + this.currentPlayer.name
-                    })
+                    current_player_details.innerHTML = "Turn : " + this.currentPlayer.name
+                    if(this.playerNo == 2){
+                        this.listenMove()
+                    }
+                    
+                    
                     for(let i=0; i<this.boardPieces.length; i++){
                         this.boardPieces[i].onclick = async () =>{
                             console.log("clicked")
                             if(this.boardPieces[i].innerHTML === "" && !this.isFinish && this.currentPlayer === this.itself){
                                 const move = this.boardPieces[i].getAttribute("piece-num")
                                 const tellMove = await fetch("/move/" + this.gameId + "/" + this.playerNo + "/" + move)
+                                                        .then( this.listenMove())
                                 this.doMove(parseInt(move))
                                 this.isWin()
                                 this.changePlayer()
@@ -263,6 +264,18 @@ body{
                         }
                     }
                     
+                }
+
+                static listenMove() {
+                    const listenForMove = new EventSource("/isMoved/" + this.gameId + "/" + this.opponentNo, { initialRetryDelayMillis: 1000, maxRetryDelayMillis: 30000 });
+                    listenForMove.addEventListener("moved", (ev) => {
+                        let move = ev.data
+                        this.doMove( move )
+                        this.isWin()
+                        this.changePlayer()
+                        document.getElementById("current-player-details").innerHTML = "Turn : " + this.currentPlayer.name
+                        listenForMove.close()
+                    })
                 }
 
                 static changePlayer(){
@@ -278,9 +291,9 @@ body{
                 }
 
                 static isWin(){
+                    let win = true
                     for(let i in this.winMoves){
-                        let win = true;
-                        let draw = true;
+                        win = true;
                         for(let j in this.winMoves[i]){
                             
                             if(!(this.currentPlayer.moves.includes(this.winMoves[i][j]))){
@@ -290,24 +303,27 @@ body{
                             console.log(this.currentPlayer.moves.includes(this.winMoves[i][j]) + "     " + this.winMoves[i][j])
                         }
 
-                        for(let i =0; i<this.boardPieces.length; i++){
-                            if(this.boardPieces[i].innerHTML === ""){
-                                draw = false
-                                break;
-                            }
-                        }
+                        
                         if(win){
                             alert(this.currentPlayer.name);
                             console.log("win")
                             this.isFinish = true
+                            document.getElementById("content").innerHTML += document.getElementById("reset-game").innerHTML
                             break;
-                        }else{
-                            if(draw){
-                                alert("match draw")
-                            }
+                        }
+                    }
+                    if(!win){
+                        if(this.player1.moves.length + this.player2.moves.length === 9){
+                            alert(" match draw ")
                         }
                     }
                     //this.isRunning = false
+                }
+
+                static reset(){
+                    this.player1.moves = [];
+                    this.player2.moves = [];
+                    document.getElementById("content").innerHTML = document.getElementById("game").innerHTML
                 }
             }
 
@@ -340,7 +356,7 @@ body{
 
                 let select_mark = document.getElementById("select-mark");
                 let find_player = document.getElementById("find-player")
-                let isAnyPlayer = null;
+                let initializingGame = null;
                 let start_btn   = document.getElementById("start-btn");
 
                 itSelf = new Player("{{user}}", "")
@@ -367,31 +383,37 @@ body{
                         OnlineGame.player2 = itSelf;
                     }
 
-                    isAnyPlayer = new EventSource("/isAnyPlayer/" + OnlineGame.gameId);
-                    isAnyPlayer.onopen = () => {
-                        document.getElementById("player-2").innerHTML += "."
+                    initializingGame = new EventSource("/initializingGame/" + OnlineGame.gameId);
+                    initializingGame.onopen = () => {
+                        if(OnlineGame.player1 == null || OnlineGame.player2 == null){
+                            document.getElementById("player-2").innerHTML += "."
+                        }
                     }
-                    isAnyPlayer.addEventListener("getPlayer", (ev) => {
+                    initializingGame.addEventListener("getPlayer", (ev) => {
                         console.log("player matched")
                         console.log(ev.data)
-                        //document.getElementById("player-2").innerHTML == 
                         const players = JSON.parse(ev.data.replace(/'/g,'"').replace(/False/g,'false').replace(/True/g,'true'))
+                        
                         console.log(players)
 
                         if(OnlineGame.playerNo == 1){
+                            document.getElementById("player-2").innerHTML == players["player2"]["name"]
+                            console.log("name set")
                             OnlineGame.player2 = new Player(players["player2"][ "name" ], players["player2"]["mark"])
                         }else{
+                            document.getElementById("player-2").innerHTML == players["player1"]["name"]
+                            console.log("name set")
                             OnlineGame.player1 = new Player(players["player1"][ "name" ], players["player1"]["mark"])
                         }
                         console.log(OnlineGame.player1)
                         console.log(OnlineGame.player2)
-                        //isAnyPlayer.close()
+                        //initializingGame.close()
                     });
 
-                    isAnyPlayer.addEventListener("readySteadyGo", () => {
+                    initializingGame.addEventListener("readySteadyGo", () => {
                         console.log("ready steady go")
                         loadContent(tem_game)
-                        isAnyPlayer.close()
+                        initializingGame.close()
                         OnlineGame.start()
                     })
 

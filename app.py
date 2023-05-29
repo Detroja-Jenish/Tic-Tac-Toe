@@ -48,19 +48,19 @@ def letsPlay():
         if(len(gameIds) == 0):
             print("blank gameIds")
             randomGameId = random.randrange(1,1000)
-            gameIds[ str(randomGameId)] = {"player1" : {"name":player_name, "mark":mark, "ready" : False},"responded":0}
+            gameIds[ str(randomGameId)] = {"player1" : {"name":player_name, "mark":mark, "ready" : False, "moved" : False},"responded":0}
             print(gameIds)
             return jsonify({"gameId": str(randomGameId), "playerNo" : "1"})
         
         for gameId in gameIds:
             print(gameId)
             if(len(gameIds[gameId])==2 and gameIds[gameId]["player1"]["mark"] != mark):
-                gameIds[gameId]["player2"] = {"name":player_name, "mark":mark, "ready" : False}
+                gameIds[gameId]["player2"] = {"name":player_name, "mark":mark, "ready" : False, "moved" : False}
                 print(gameIds)
                 return jsonify({"gameId": gameId, "playerNo" : "2"})
 
         randomGameId = random.randrange(1,1000)
-        gameIds[ str(randomGameId) ] = {"player1" : {"name":player_name, "mark":mark, "ready" : False},"responded":0} 
+        gameIds[ str(randomGameId) ] = {"player1" : {"name":player_name, "mark":mark, "ready" : False, "moved" : False},"responded":0} 
         return jsonify({"gameId": str(randomGameId), "playerNo" : "1"})
 
     except:
@@ -79,9 +79,9 @@ def getGameIds():
 
 @app.route("/move/<gameId>/<playerNo>/<move>")
 def moved(gameId, playerNo, move):
-   global gameIds
-   gameIds[gameId]["player" + playerNo]["moved"] = True
-   gameIds[gameId]["player" + playerNo]["move"] = move
+   global currentGames
+   currentGames[gameId]["player" + playerNo]["moved"] = True
+   currentGames[gameId]["player" + playerNo]["move"] = move
    return Response(status=202)
 
 @app.route("/isMoved/<gameId>/<opponentNo>")
@@ -90,9 +90,9 @@ def isMoved(gameId, opponentNo):
     res = Response(move, mimetype="text/event-stream")
     return res
 
-@app.route("/isAnyPlayer/<gameId>")
+@app.route("/initializingGame/<gameId>")
 def isAnyPlayer(gameId):
-    player = get_player(gameId)
+    player = initializing(gameId)
     print(player)
     res =Response(player, mimetype="text/event-stream")
     return res
@@ -104,13 +104,13 @@ def iAmReady(gameId,playerNo):
     print(gameIds[gameId][f"player{playerNo}"])
     return Response(status=202)
 
-def IsMoved(gameId, opponentNo):
-    global gameIds
-    if gameIds[gameId]["player" + opponentNo]["moved"]:
-        gameIds[gameId]["player" + opponentNo]["moved"] = False
-        yield "event: moved\ndata: %s\n\n" % gameIds[gameId]["player" + opponentNo]["move"]
+def IsMoved(gameId, opponentNo ):
+    global currentGames
+    if currentGames[gameId]["player" + opponentNo]["moved"]:
+        currentGames[gameId]["player" + opponentNo]["moved"] = False
+        yield "event: moved\ndata: %s\n\n" % currentGames[gameId]["player" + opponentNo]["move"]
 
-def get_player(gameId):
+def initializing(gameId):
     global gameIds
     len(gameIds[gameId])
     if (len( gameIds[ gameId ] ) == 3) and (gameIds[gameId]["responded"] < 2):
@@ -119,9 +119,13 @@ def get_player(gameId):
         yield f"event:getPlayer\ndata:{gameIds[gameId]} \n\n"
     elif (gameIds[gameId]["player1"]["ready"]) and (gameIds[gameId]["player2"]["ready"]):
         print("match begins")
+        gameIds[ gameId ]["responded"] += 1
         print(((gameIds[gameId]["player1"]["ready"]) and (gameIds[gameId]["player2"]["ready"])))
+        if(gameIds[ gameId ][ "responded" ] == 4):
+            currentGames[ gameId ] = gameIds[gameId]
+            gameIds.pop(gameId)
         yield "event: readySteadyGo\ndata: true\n\n"
-    print(((gameIds[gameId]["player1"]["ready"]) and (gameIds[gameId]["player2"]["ready"])))
+
 
 
 
