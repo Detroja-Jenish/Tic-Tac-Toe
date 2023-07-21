@@ -291,6 +291,7 @@ body{
                 }
 
                 static isWin(){
+                    console.log("is in win func")
                     let win = true
                     for(let i in this.winMoves){
                         win = true;
@@ -305,6 +306,8 @@ body{
 
                         
                         if(win){
+                            consolle.log("player1", player1.moves);
+                            consolle.log("player2", player2.moves);
                             alert(this.currentPlayer.name);
                             console.log("win")
                             this.isFinish = true
@@ -397,11 +400,11 @@ body{
                         console.log(players)
 
                         if(OnlineGame.playerNo == 1){
-                            document.getElementById("player-2").innerHTML == players["player2"]["name"]
+                            document.getElementById("player-2").innerHTML = players["player2"]["name"]
                             console.log("name set")
                             OnlineGame.player2 = new Player(players["player2"][ "name" ], players["player2"]["mark"])
                         }else{
-                            document.getElementById("player-2").innerHTML == players["player1"]["name"]
+                            document.getElementById("player-2").innerHTML = players["player1"]["name"]
                             console.log("name set")
                             OnlineGame.player1 = new Player(players["player1"][ "name" ], players["player1"]["mark"])
                         }
