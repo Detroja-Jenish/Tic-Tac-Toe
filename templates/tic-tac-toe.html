@@ -166,12 +166,12 @@ body{
                     this.currentPlayer = this.player1;
                     for(let i=0; i<this.boardPieces.length; i++){
                         this.boardPieces[i].onclick = () =>{
-                            console.log("clicked")
+                            //console.log("clicked")
                             if(this.boardPieces[i].innerHTML === "" && !this.isFinish){
                                 this.boardPieces[i].innerHTML = this.currentPlayer.mark;
-                                console.log("atrribute    :   " + this.boardPieces[i].getAttribute("piece-num") )
+                                //console.log("atrribute    :   " + this.boardPieces[i].getAttribute("piece-num") )
                                 this.currentPlayer.moves.push( this.boardPieces[i].getAttribute("piece-num"))
-                                console.log(this.currentPlayer.moves)
+                                //console.log(this.currentPlayer.moves)
                                 this.isWin()
                                 if(this.currentPlayer === this.player1){
                                     this.currentPlayer = this.player2;
@@ -205,7 +205,7 @@ body{
                                 win = false;
                                 break;
                             }
-                            console.log(this.currentPlayer.moves.includes(this.winMoves[i][j]) + "     " + this.winMoves[i][j])
+                            //console.log(this.currentPlayer.moves.includes(this.winMoves[i][j]) + "     " + this.winMoves[i][j])
                         }
 
                         for(let i =0; i<this.boardPieces.length; i++){
@@ -216,7 +216,7 @@ body{
                         }
                         if(win){
                             alert(this.currentPlayer.name);
-                            console.log("win")
+                            //console.log("win")
                             this.isFinish = true
                             break;
                         }else{
@@ -251,7 +251,7 @@ body{
                     
                     for(let i=0; i<this.boardPieces.length; i++){
                         this.boardPieces[i].onclick = async () =>{
-                            console.log("clicked")
+                            //console.log("clicked")
                             if(this.boardPieces[i].innerHTML === "" && !this.isFinish && this.currentPlayer === this.itself){
                                 const move = this.boardPieces[i].getAttribute("piece-num")
                                 const tellMove = await fetch("/move/" + this.gameId + "/" + this.playerNo + "/" + move)
@@ -287,11 +287,14 @@ body{
                 }
                 static doMove(move){
                     this.boardPieces[move-1].innerHTML = this.currentPlayer.mark;
-                    this.currentPlayer.moves.push( move )
+                    this.currentPlayer.moves.push( ""+move )
                 }
 
                 static isWin(){
-                    console.log("is in win func")
+                    console.log(this.currentPlayer.name);
+                    console.log("player1" , this.player1.name , this.player1.moves)
+                    console.log("player2" , this.player2.name , this.player2.moves)
+                    //console.log("")
                     let win = true
                     for(let i in this.winMoves){
                         win = true;
@@ -301,15 +304,15 @@ body{
                                 win = false;
                                 break;
                             }
-                            console.log(this.currentPlayer.moves.includes(this.winMoves[i][j]) + "     " + this.winMoves[i][j])
+                            //console.log(this.currentPlayer.moves.includes(this.winMoves[i][j]) + "     " + this.winMoves[i][j])
                         }
 
                         
                         if(win){
-                            consolle.log("player1", player1.moves);
-                            consolle.log("player2", player2.moves);
+                            //console.log("player1", this.player1.moves);
+                            //console.log("player2", this.player2.moves);
                             alert(this.currentPlayer.name);
-                            console.log("win")
+                            //console.log("win")
                             this.isFinish = true
                             document.getElementById("content").innerHTML += document.getElementById("reset-game").innerHTML
                             break;
@@ -343,7 +346,7 @@ body{
                 }
                 setMark(mark){
                      this.mark = mark
-                     console.log("this mark = " + this.mark)
+                     //console.log("this mark = " + this.mark)
                 }
                 getName(){
                     return name
@@ -365,12 +368,12 @@ body{
                 itSelf = new Player("{{user}}", "")
                 
                 select_mark.onchange = () => {
-                    console.log(select_mark.value)
+                    //console.log(select_mark.value)
                 }
 
                 start_btn.onclick = async () =>{
                     const ready = await fetch("/iAmReady/" + OnlineGame.gameId + "/" + OnlineGame.playerNo)
-                    console.log(ready)
+                    //console.log(ready)
                 }
                 find_player.onclick = async () => {
                     itSelf.mark = select_mark.value
@@ -393,38 +396,38 @@ body{
                         }
                     }
                     initializingGame.addEventListener("getPlayer", (ev) => {
-                        console.log("player matched")
-                        console.log(ev.data)
+                        //console.log("player matched")
+                        //console.log(ev.data)
                         const players = JSON.parse(ev.data.replace(/'/g,'"').replace(/False/g,'false').replace(/True/g,'true'))
                         
-                        console.log(players)
+                        //console.log(players)
 
                         if(OnlineGame.playerNo == 1){
                             document.getElementById("player-2").innerHTML = players["player2"]["name"]
-                            console.log("name set")
+                            //console.log("name set")
                             OnlineGame.player2 = new Player(players["player2"][ "name" ], players["player2"]["mark"])
                         }else{
                             document.getElementById("player-2").innerHTML = players["player1"]["name"]
-                            console.log("name set")
+                            //console.log("name set")
                             OnlineGame.player1 = new Player(players["player1"][ "name" ], players["player1"]["mark"])
                         }
-                        console.log(OnlineGame.player1)
-                        console.log(OnlineGame.player2)
+                        //console.log(OnlineGame.player1)
+                        //console.log(OnlineGame.player2)
                         //initializingGame.close()
                     });
 
                     initializingGame.addEventListener("readySteadyGo", () => {
-                        console.log("ready steady go")
+                        //console.log("ready steady go")
                         loadContent(tem_game)
                         initializingGame.close()
                         OnlineGame.start()
                     })
 
-                    console.log(OnlineGame.player1);
-                    console.log(OnlineGame.player2)
+                    //console.log(OnlineGame.player1);
+                    //console.log(OnlineGame.player2)
                     content.removeChild(select_mark)
                     select_mark.removeEventListener("click", () => {
-                        console.log(select_mark.value)
+                        //console.log(select_mark.value)
                     }, true)
                 }
                 
@@ -433,7 +436,7 @@ body{
             play_offline_btn.onclick = () => {
                 Game.player1 = new Player("{{user}}" ,"");
                 Game.player2 = new Player("","");
-                console.log(Game.player1.getName())
+                //console.log(Game.player1.getName())
                 loadContent( tem_form_for_ffline )
 
                 let player1_name = document.getElementById("player1-name");
@@ -443,49 +446,49 @@ body{
                 let start_btn    = document.getElementById("start-btn");
 
                 player1_name.onchange = () =>{
-                    console.log(player1_name.value);
+                    //console.log(player1_name.value);
 
                     Game.player1.setName(player1_name.value);
                 }
                 player1_mark.onchange = () =>{
-                    console.log(player1_mark.value);
+                    //console.log(player1_mark.value);
 
                     Game.player1.setMark(player1_mark.value);
                 }
                 player2_name.onchange = () =>{
-                    console.log(player2_name.value);
+                    //console.log(player2_name.value);
 
                     Game.player2.setName(player2_name.value);
                 }
                 player2_mark.onchange = () =>{
-                    console.log(player2_mark.value);
+                    //console.log(player2_mark.value);
 
                     Game.player2.setMark(player2_mark.value);
                 }
 
                 start_btn.onclick = () => {
-                    console.log("start")
-                    console.log(Game.player1.name)
+                    //console.log("start")
+                    //console.log(Game.player1.name)
                     if(Game.player1.name != "" && Game.player2.name != "" && Game.player1.mark != "" && Game.player2.mark != ""){
                         player1_mark.removeEventListener("change", () =>{
-                            console.log(player1_mark.value);
-                            console.log(player1_mark)
+                            //console.log(player1_mark.value);
+                            //console.log(player1_mark)
                             Game.player1.setMark(player1_mark.value);
                         }, true);
 
                         player1_name.removeEventListener("change", () =>{
-                            console.log(player1_name.value);
-                            console.log(player1_name)
+                            //console.log(player1_name.value);
+                            //console.log(player1_name)
                             Game.player1.setName(player1_name.value);
                         }, true);
                         player2_mark.removeEventListener("change", () =>{
-                            console.log(player2_mark.value);
-                            console.log(player2_mark)
+                            //console.log(player2_mark.value);
+                            //console.log(player2_mark)
                             Game.player2.setMark(player2_mark.value);
                         }, true);
                         player2_name.removeEventListener("change", () =>{
-                            console.log(player2_mark.value);
-                            console.log(player2_mark)
+                            //console.log(player2_mark.value);
+                            //console.log(player2_mark)
                             Game.player2.setMark(player2_mark.value);
                         }, true);
                         loadContent(tem_game);
